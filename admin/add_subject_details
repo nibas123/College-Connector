@@ -1,0 +1,27 @@
+<?php
+include_once("query.php");
+$user=new query();
+$user1=new query();
+$semester=$_POST['semester'];
+$course_id=$_POST['course_name'];
+$fee=$_POST['fee'];
+$res1=$user1->select_semester_details_sem($semester,$course_id);
+while ($row=mysqli_fetch_array($res1)) {
+
+	$sid=$row['semester_id'];
+}
+echo $sid;
+?>
+<script type="text/javascript">
+	window.alert($sid);
+	window.alert("gggggggggg");
+</script>
+<?php
+$res=$user->update_semester_details($semester,$course_id,$fee,$sid);
+if($res==1)
+{
+header("location:semester.php");
+}
+
+
+?>

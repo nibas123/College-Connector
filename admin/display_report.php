@@ -1,0 +1,284 @@
+<?php 
+include_once("query.php");
+$user=new query();
+$student=$_GET["student"];
+$res=$user->select_weightage();
+	$count=1;
+	$exam_weightage=0;
+	$attendance_weightage=0;
+	$assignment_weightage=0;
+	$rule_weightage=0;
+  while($r=mysqli_fetch_array($res))
+  {
+  if($r["type"]=="Examination")	
+  {
+$exam_weightage=$r["weightage"];
+  }
+   if($r["type"]=="Attendance")	
+  {
+$attendance_weightage=$r["weightage"];
+  }
+  if($r["type"]=="Assignment")	
+  {
+$assignment_weightage=$r["weightage"];
+  }
+  if($r["type"]=="Rule")	
+  {
+$rule_weightage=$r["weightage"];
+  }
+
+
+
+  }
+  //Include dboperation class file 
+ include_once("../dboperation.php");
+ // code to create object of class dboperations
+       $db=new dboperation();
+     
+        
+ $sql="select count(*)   as c,sum(er.mark) as summark,sum(ea.out_of_mark) as totalmark from  tbl_exam_result as er inner join  tbl_exam_announce as ea on er.exam_id=ea.exam_id where er.student_login_id='$student'";
+       $res1=$db->execute($sql);
+       $examcount=0;
+       $summark=0;
+       $totalmark=0;
+        while($row1=mysqli_fetch_array($res1))
+  {
+  	  $examcount=$row1["c"];
+  	  $summark=$row1["summark"];
+  	  $totalmark=$row1["totalmark"];
+  }
+  if($summark>0)
+            {
+           $percentagemark=$summark/$totalmark*100;
+            }
+            else
+            {
+             $percentagemark=0;   
+            }
+       $sql="select count(*)   as c,sum(er.mark) as summark,sum(ea.out_of_mark) as totalmark from  tbl_assignment_result as er inner join  tbl_assignment as ea on er.assign_id=ea.assign_id where er.student_login_id='$student'";
+       $res1=$db->execute($sql);
+       $assignment_count=0;
+       $assignment_summark=0;
+       $assignment_totalmark=0;
+        while($row1=mysqli_fetch_array($res1))
+  {
+  	  $assignment_count=$row1["c"];
+  	  $assignment_summark=$row1["summark"];
+  	  $assignment_totalmark=$row1["totalmark"];
+  }
+  if($assignment_summark>0)
+            {
+           $assinment_percentagemark=$assignment_summark/$assignment_totalmark*100;
+            }
+            else
+            {
+             $assinment_percentagemark=0;   
+            }
+       
+        $sql5="select count(*) as c3 from  tbl_attendance as a  where a.student_login_id='$student' and a.attendance_status='Present'";
+        $res5=$db->execute($sql5);
+             
+           while($row5=mysqli_fetch_array($res5))
+  {
+           $totalpresent= $row5["c3"];
+          }
+ $sql4="select count(*) as c4 from  tbl_attendance as a  where a.student_login_id='$student' and a.attendance_status='Absent'";
+        $res4=$db->execute($sql4);
+             
+           while($row4=mysqli_fetch_array($res4))
+  {
+            $totalabsent= $row4["c4"];
+          }
+
+       $totalperiod=$totalabsent+$totalpresent;    
+          if($totalperiod>0)
+          {
+           $attendance_percentage=$totalpresent/$totalperiod*100;
+          }
+          else
+          {
+           $attendance_percentage=0;   
+          }
+           $attendance_percentage;
+    $sql6="select count(*) as c4, sum(r.fine) as total_rules_fine  from   tbl_rule_violation as rv inner join tbl_rules as r on rv.rule_id=r.rule_id  where rv.student_login_id='$student'";
+     $res6=$db->execute($sql6);
+             
+while($row6=mysqli_fetch_array($res6))
+  {
+           $total_no_rule_violated= $row6["c4"];
+           $fineamount=  $row6["total_rules_fine"];
+          if($total_no_rule_violated>0)
+          {
+           $percentage_rule_violation=$total_no_rule_violated/50*100;
+          }
+          else
+          {
+           $percentage_rule_violation=0;   
+          }
+         
+            } 
+              $percentage_rule_violation;
+            $weightage= $percentagemark/100*$exam_weightage/100+$assinment_percentagemark/100*$assignment_weightage/100+$attendance_percentage/100*$attendance_weightage/100-$percentage_rule_violation/100*$rule_weightage/100;
+           $score=$weightage*10;
+            $roundOff = ($score*100.0)/100.0;
+$qry22="select *  from tbl_student_reg where login_id='$student'";
+     
+          
+    
+          $res22=$db->execute($qry22);
+             
+while($row22=mysqli_fetch_array($res22))
+  {
+               $StudentName=$row22["first_name"]." ".$row22["last_name"];
+              
+              }
+
+?>
+<h3 class="heading-agileinfo">Performance Evaluation Report of <?php echo $StudentName?><span>Report</span></h3>
+
+            <table class="table table-striped">
+     <tr><td colspan="2"></td></tr>
+     <tr><td class="logo1" style="color:#F39C12;  font-size: 30px"><b>Performance Evaluation Score: <?php echo $roundOff?></b></td> </tr>
+     <tr><td colspan="2" align="center" class="logo1" style="color:#E15700;  font-size: 30px"><b>Grade:<?php 
+        if($score>0 && $score<1)
+           {
+           echo "D  Need More Improvement";  
+           }
+          else if($score>1 && $score<2)
+           {
+             echo  ("D  Need Improvement");  
+           }
+          else if($score>2 && $score<3)
+           {
+             echo "D  Need Improvement";  
+           }
+          else if($score>3 && $score<4)
+           {
+             echo "D+  Marginal";  
+           }
+          else if($score>4 && $score<5)
+           {
+             echo "C  Average" ;  
+           }
+         else if($score>5 && $score<6)
+           {
+             echo "C+  Above Average";  
+           }
+           else if($score>=6 && $score<7)
+           {
+             echo "B  Good";      
+           }
+           else if($score>=7 && $score<8)
+           {
+             echo "B+ Very Good";    
+           }
+           else if($score>=8 && $score<9)
+           {
+              echo "A Excellent";     
+           }
+           else if($score>=9 && $score<=10)
+           {
+              echo "A+  OutStanding";    
+           }
+           else
+           {
+               echo "Undefined";
+           }
+          
+     ?>
+             
+   </b></td></tr>
+        <tr><td>
+                <table class="table table-striped">
+                    <tr><th>Grade</th><th>Range of Mark</th><th>Score</th><th>Level</th></tr>  
+                      <tr><td>A+</td><td>90% to 100% </td><td>9</td><td>Outstanding</td></tr>   
+                     <tr><td>A</td><td>80% to 89% </td><td>8</td><td>Excellent</td></tr>   
+                      <tr><td>B+</td><td>70% to 79% </td><td>7</td><td>Very Good</td></tr>   
+                      <tr><td>B</td><td>60% to 69% </td><td>6</td><td>Good</td></tr>   
+                       <tr><td>C+</td><td>50% to 59% </td><td>5</td><td>Above Average</td></tr>   
+                        <tr><td>C</td><td>40% to 49% </td><td>4</td><td>Average</td></tr>   
+                         <tr><td>D+</td><td>30% to 39% </td><td>3</td><td>Marginal</td></tr>   
+                       <tr><td>D</td><td>20% to 29% </td><td>2</td><td>Need Improvement</td></tr>   
+                        <tr><td>E</td><td>Below 20%</td><td>1</td><td>Need Improvement</td></tr>   
+                    
+                </table>    
+                
+                
+                
+              </td></tr>
+
+          
+     
+    
+ <tr><td><table  class="table table-striped"><tr><th colspan="2" align="center" style="color: #FFF; ">Details</th></tr>
+     <tr><td  colspan="2" style="background-color:#F39C12;color: #FFF;">1.Examination</td></tr>
+     <tr><td>Total Number of Examination</td><td><?php echo $examcount?></td></tr>
+      <tr><td>Sum of Mark</td><td><?php echo $summark?></td></tr>
+       <tr><td>Out of Mark</td><td><?php echo $totalmark?></td></tr>
+       <tr><td>Percentage</td><td><?php echo ($percentagemark*100.0)/100.0 ?></td></tr>
+          <tr><td colspan="2">
+               <table class="table table-striped">
+                   <tr><td colspan="3" align="center">Mark Details</td></tr>
+                   
+                   <tr><td>Subject</td><td>Mark</td><td>Out of Mark</td></tr>
+          <?php  $query8="select * from  tbl_exam_result as er inner join  tbl_exam_announce as ea on er.exam_id=ea.exam_id inner join tbl_subject as s on s.subject_id=ea.subject_id where er.student_login_id='$student'";
+             
+            $res8=$db->execute($query8);
+             
+while($row8=mysqli_fetch_array($res8))
+  { 
+  	?>
+            <tr><td><?php echo $row8["subject_name"]?></td><td><?php echo $row8["mark"]?></td><td><?php echo $row8["out_of_mark"]?></td></tr>
+          <?php  }
+            
+         ?>
+                   </table>
+           </td>     
+           
+       </tr>
+       
+       
+       
+       <tr><td  colspan="2" style="background-color:#F39C12;color: #FFF;">2.Assignment</td></tr>
+     <tr><td>Total Number of Assignment</td><td><?php $assignment_mark?></td></tr>
+      <tr><td>Sum of Mark</td><td><?php echo $assignment_summark ?></td></tr>
+       <tr><td>Out of Mark</td><td><?php echo $assignment_totalmark ?></td></tr>
+         <tr><td>Percentage</td><td><?php echo ($assinment_percentagemark*100.0)/100.0?>%</td></tr>
+          <tr><td colspan="2">
+               <table class="table table-striped">
+                   <tr><td colspan="3" align="center">Mark Details</td></tr>
+                   
+                   <tr><td>Subject</td><td>Mark</td><td>Out of Mark</td></tr>
+          <?php  $query9="select * from   tbl_assignment_result as ar inner join   tbl_assignment as aa on ar.assign_id=aa.assign_id  inner join tbl_subject as s on s.subject_id=aa.subject_id where ar.student_login_id='$student'";
+             
+     $res9=$db->execute($query9);
+             
+while($row9=mysqli_fetch_array($res9))
+  { 
+  	?>
+            <tr><td><?php echo $row9["subject_name"]?></td><td><?php echo $row9["mark"]?></td><td><?php echo $row9["out_of_mark"]?></td></tr>
+          <?php }
+         ?>
+                   </table>
+           </td>     
+           
+       </tr>
+ 
+         
+         
+         
+       <tr><td  colspan="2" style="background-color:#F39C12;color: #FFF;">3.Attendance</td></tr>
+     <tr><td>Total Periods</td><td><?php echo  $totalperiod ?></td></tr>
+      <tr><td>Attendance</td><td><?php echo $totalpresent?> </td></tr>
+      <tr><td>Percentage</td><td><?php echo ($attendance_percentage*100.0)/100.0 ?>%</td></tr>
+      
+      
+      <tr><td  colspan="2" style="background-color:#F39C12;color: #FFF;">4.Rules Violation</td></tr>
+     <tr><td>Number of Rules Violated</td><td><?php echo $total_no_rule_violated?></td></tr>
+      <tr><td>Amount Paid as Fine</td><td><?php echo $fineamount?></td></tr>
+      <tr><td>Percentage Deducted</td><td><?php echo ($percentage_rule_violation*100.0)/100.0?>%</td></tr>
+      
+      
+  </table>  </td></tr> 
+</table>
+   
